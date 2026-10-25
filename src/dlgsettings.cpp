@@ -586,13 +586,13 @@ void DlgSettings::on_checkBoxDownmixBm_toggled(bool checked) {
     emit audioDownmixChangedBm(checked);
 }
 
-void DlgSettings::on_comboBoxDevice_currentIndexChanged(const QString &arg1) {
+void DlgSettings::on_comboBoxDevice_currentTextChanged(const QString &arg1) {
     if (!m_pageSetupDone)
         return;
     m_settings.setRecordingInput(arg1);
 }
 
-void DlgSettings::on_comboBoxCodec_currentIndexChanged(const QString &arg1) {
+void DlgSettings::on_comboBoxCodec_currentTextChanged(const QString &arg1) {
     if (!m_pageSetupDone)
         return;
     m_settings.setRecordingCodec(arg1);

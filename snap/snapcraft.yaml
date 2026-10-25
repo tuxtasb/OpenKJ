@@ -10,9 +10,13 @@ description: |
   Features rotation management, playback of all common karaoke formats
   (MP3+G, CDG, zip, video) and various other features important for
   hosting a show.
-grade: devel
+grade: stable
 confinement: strict
 icon: src/Icons/org.openkj.OpenKJ.svg
+website: https://openkj.org
+source-code: https://github.com/OpenKJ/OpenKJ
+issues: https://github.com/OpenKJ/OpenKJ/issues
+contact: support@openkj.org
 
 platforms:
   amd64:
@@ -32,7 +36,6 @@ apps:
       - audio-playback
       - audio-record
       - opengl
-      - cups-control
     environment:
       GST_PLUGIN_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gstreamer-1.0
       GST_PLUGIN_SYSTEM_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gstreamer-1.0
@@ -51,12 +54,18 @@ parts:
       - pkg-config
       - libgstreamer1.0-dev
       - libgstreamer-plugins-base1.0-dev
+      # Needed to link against the Qt SDK snap (supplied at runtime by the
+      # kde-qt6-core24 content snap)
+      - libfreetype-dev
+      - libxkbcommon-dev
+      - libduktape207
+    override-pull: |
+      craftctl default
+      craftctl set version="$(grep -oP 'OKJ_VERSION_STRING "\K[^"]+' src/okjversion.h)"
     cmake-generator: Ninja
     cmake-parameters:
       - -DCMAKE_BUILD_TYPE=Release
       - -DCMAKE_INSTALL_PREFIX=/usr
-      - -DCMAKE_FIND_ROOT_PATH=$CRAFT_STAGE\;/snap/kde-qt6-core24-sdk/current\;/snap/kf6-core24-sdk/current/usr
-      - -DCMAKE_PREFIX_PATH=$CRAFT_STAGE\;/snap/kde-qt6-core24-sdk/current\;/snap/kf6-core24-sdk/current/usr
       # Statically build current TagLib/spdlog releases rather than the older
       # copies in the Ubuntu 24.04 archive.
       - -DOKJ_FETCH_TAGLIB=ON
@@ -78,7 +87,9 @@ parts:
       # Key changer (ladspa rubberband pitch shifter)
       - rubberband-ladspa
     prime:
-      # Provided by the kde-neon-6 content snaps
+      # Provided by the kf6-core24 content snap (kde-neon-6)
       - -usr/lib/*/libQt6*
       - -usr/share/doc
+      # libcaca GL output plugin (unused, pulls in freeglut)
+      - -usr/lib/*/caca
       - -usr/share/man

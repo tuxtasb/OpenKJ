@@ -32,6 +32,15 @@
         <binary>openkj</binary>
     </provides>
     <releases>
+        <release version="2.1.39" date="2026-10-25">
+            <description>
+                <ul>
+                    <li>Ported to Qt 6 and updated GStreamer, TagLib, spdlog and miniz.</li>
+                    <li>Single instance check now works in sandboxed packages (snap, flatpak, app stores).</li>
+                    <li>Software video rendering fallback on Wayland.</li>
+                </ul>
+            </description>
+        </release>
         <release version="2.1.38" date="2022-08-12">
             <description>
                 <ul>

@@ -126,8 +126,8 @@ private slots:
     void on_checkBoxSilenceDetectionBm_toggled(bool checked);
     void on_checkBoxDownmix_toggled(bool checked);
     void on_checkBoxDownmixBm_toggled(bool checked);
-    void on_comboBoxDevice_currentIndexChanged(const QString &arg1);
-    void on_comboBoxCodec_currentIndexChanged(const QString &arg1);
+    void on_comboBoxDevice_currentTextChanged(const QString &arg1);
+    void on_comboBoxCodec_currentTextChanged(const QString &arg1);
     void on_groupBoxRecording_toggled(bool arg1);
     void on_buttonBrowse_clicked();
     void onNetworkReply(QNetworkReply* reply);
