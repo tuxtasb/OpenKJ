@@ -1,13 +1,18 @@
-#include <QObject>
-#include <QSharedMemory>
-#include <QSystemSemaphore>
+#ifndef RUNGUARD_H
+#define RUNGUARD_H
 
+#include <QLockFile>
+#include <QString>
 
+// Single instance guard backed by a lock file in the per-user app data
+// directory.  Unlike shared memory/semaphores this works inside the snap,
+// flatpak, MSIX and Mac App Store sandboxes and recovers from stale locks
+// left behind by a crash.
 class RunGuard
 {
 
 public:
-    RunGuard( const QString& key );
+    explicit RunGuard( const QString& key );
     ~RunGuard();
 
     bool isAnotherRunning();
@@ -15,12 +20,9 @@ public:
     void release();
 
 private:
-    const QString key;
-    const QString memLockKey;
-    const QString sharedmemKey;
-
-    QSharedMemory sharedMem;
-    QSystemSemaphore memLock;
+    QLockFile lockFile;
 
     Q_DISABLE_COPY( RunGuard )
 };
+
+#endif // RUNGUARD_H

@@ -22,7 +22,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QMessageBox>
-#include <QDesktopWidget>
 #include <QMenu>
 #include <QInputDialog>
 #include <QFileDialog>
@@ -594,7 +593,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->sliderBmVolume->setMaximumWidth(12);
     ui->sliderProgress->setMaximumHeight(12);
 #endif
-    QDir okjDataDir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+    QDir okjDataDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation));
     if (!okjDataDir.exists()) {
         okjDataDir.mkpath(okjDataDir.absolutePath());
     }
@@ -3308,11 +3307,7 @@ void MainWindow::appFontChanged(const QFont &font) {
 
     setFont(font);
     QFontMetrics fm(m_settings.applicationFont());
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
     int cvwWidth = std::max(300, fm.horizontalAdvance("Total: 00:00  Current:00:00  Remain: 00:00"));
-#else
-    int cvwWidth = std::max(300, fm.width("Total: 00:00  Current:00:00  Remain: 00:00"));
-#endif
     m_logger->info("{} Resizing videoPreview to width: {}", m_loggingPrefix, cvwWidth);
     QSize mcbSize(fm.height(), fm.height());
     if (mcbSize.width() < 32) {
@@ -3404,11 +3399,7 @@ void MainWindow::autosizeBmViews() {
 
     int fH = QFontMetrics(m_settings.applicationFont()).height();
     int iconWidth = fH + fH;
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
     int durationColSize = QFontMetrics(m_settings.applicationFont()).horizontalAdvance("Duration") + fH;
-#else
-    int durationColSize = QFontMetrics(m_settings.applicationFont()).width("Duration") + fH;
-#endif
     // 4 = filename 1 = metadata artist 2 = metadata title
 
     int artistColSize = 0;
@@ -3870,7 +3861,6 @@ void MainWindow::actionVideoLargeTriggered() {
 }
 
 void MainWindow::actionKaraokeTorture() {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     connect(&m_timerTest, &QTimer::timeout, [&]() {
         QApplication::beep();
         static int runs = 0;
@@ -3904,11 +3894,9 @@ void MainWindow::actionKaraokeTorture() {
         ui->labelSinger->setText("Torture run (" + QString::number(++runs) + ")");
     });
     m_timerTest.start(4000);
-#endif
 }
 
 void MainWindow::actionKAndBTorture() {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     connect(&m_timerTest, &QTimer::timeout, [&]() {
         QApplication::beep();
         static bool playing = false;
@@ -3950,11 +3938,9 @@ void MainWindow::actionKAndBTorture() {
         playing = true;
     });
     m_timerTest.start(2000);
-#endif
 }
 
 void MainWindow::actionBurnIn() {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     m_testMode = true;
     emit ui->buttonClearRotation->clicked();
     for (auto i = 0; i < 21; i++) {
@@ -3999,11 +3985,9 @@ void MainWindow::actionBurnIn() {
         m_logger->info("{} Burn in test cycle: {}", m_loggingPrefix, ++runs);
     });
     m_timerTest.start(3000);
-#endif
 }
 
 void MainWindow::actionPreviewBurnIn() {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     m_testMode = true;
     connect(&m_timerTest, &QTimer::timeout, [&]() {
         QApplication::beep();
@@ -4025,11 +4009,9 @@ void MainWindow::actionPreviewBurnIn() {
         m_logger->info("{} Preview burn-in test cycle: {}", m_loggingPrefix, ++runs);
     });
     m_timerTest.start(3250);
-#endif
 }
 
 void MainWindow::actionCdgDecodeTorture() {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     connect(&m_timerTest, &QTimer::timeout, [&]() {
         QApplication::beep();
         static int runs = 0;
@@ -4110,7 +4092,6 @@ void MainWindow::actionCdgDecodeTorture() {
         ui->labelSinger->setText("Torture run (" + QString::number(++runs) + ")");
     });
     m_timerTest.start(2000);
-#endif
 }
 
 void MainWindow::writeGstPipelineDiagramToDisk() {
@@ -4333,7 +4314,6 @@ void MainWindow::resetBmLabels() {
 }
 
 void MainWindow::actionBurnInEosJump() {
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     m_testMode = true;
     emit ui->buttonClearRotation->clicked();
     for (auto i = 0; i < 21; i++) {
@@ -4380,7 +4360,6 @@ void MainWindow::actionBurnInEosJump() {
         ui->labelSinger->setText("Torture run (" + QString::number(runs) + ")");
     });
     m_timerTest.start(13000);
-#endif
 }
 
 void MainWindow::showAddSingerDialog() {

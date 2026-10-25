@@ -23,6 +23,9 @@
 #include <QFile>
 #include <QBuffer>
 #include <QTemporaryDir>
+#include <QRegularExpression>
+#include <QStandardPaths>
+#include <QCoreApplication>
 #ifdef Q_OS_WIN
 #include <io.h>
 #else
@@ -31,6 +34,27 @@
 #endif
 
 QString infoZipPath;
+
+namespace {
+    // Locate the InfoZip unzip binary.  Inside a snap/flatpak/app bundle it is
+    // shipped next to the application rather than in /usr/bin.
+    QString findInfoZip()
+    {
+#ifdef Q_OS_WIN
+        const QString exe = "unzip.exe";
+#else
+        const QString exe = "unzip";
+#endif
+        QString path = QStandardPaths::findExecutable(exe, {QCoreApplication::applicationDirPath()});
+        if (path.isEmpty())
+            path = QStandardPaths::findExecutable(exe);
+#ifdef Q_OS_WIN
+        return path.isEmpty() ? exe : path;
+#else
+        return path.isEmpty() ? "/usr/bin/unzip" : path;
+#endif
+    }
+}
 
 OkArchive::OkArchive(QString ArchiveFile, QObject *parent) : QObject(parent)
 {
@@ -52,11 +76,7 @@ OkArchive::OkArchive(QString ArchiveFile, QObject *parent) : QObject(parent)
     audioExtensions.append(".ogg");
     audioExtensions.append(".mov");
     audioExtensions.append(".flac");
-#ifdef Q_OS_WIN
-    infoZipPath = "unzip.exe";
-#else
-    infoZipPath = "/usr/bin/unzip";
-#endif
+    infoZipPath = findInfoZip();
 
 }
 
@@ -79,11 +99,7 @@ OkArchive::OkArchive(QObject *parent) : QObject(parent)
     audioExtensions.append(".ogg");
     audioExtensions.append(".mov");
     audioExtensions.append(".flac");
-#ifdef Q_OS_WIN
-    infoZipPath = "unzip.exe";
-#else
-    infoZipPath = "/usr/bin/unzip";
-#endif
+    infoZipPath = findInfoZip();
 }
 
 OkArchive::~OkArchive()
@@ -321,11 +337,7 @@ zipEntries OkArchive::getZipContents()
         return zipEntries();
     }
     m_logger->trace("{} Infozip output: \n{}",m_loggingPrefix, output);
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-    QStringList data = output.split(QRegExp("[\r\n]"),QString::SkipEmptyParts);
-#else
-    QStringList data = output.split(QRegExp("[\r\n]"),Qt::SkipEmptyParts);
-#endif
+    QStringList data = output.split(QRegularExpression("[\r\n]"), Qt::SkipEmptyParts);
     int fnStart = 0;
     int listStart = 0;
     for (int l=0; l < data.size(); l++)
@@ -354,11 +366,7 @@ zipEntries OkArchive::getZipContents()
         zipEntry entry;
         int fnOffset = data.at(i).size() - fnStart;
         entry.fileName = data.at(i).right(fnOffset);
-#if QT_VERSION < QT_VERSION_CHECK(5, 15, 0)
-        entry.fileSize = data.at(i).split(" ", QString::SkipEmptyParts).at(0).toInt();
-#else
         entry.fileSize = data.at(i).split(' ', Qt::SkipEmptyParts).at(0).toInt();
-#endif
         m_entries.append(entry);
     }
     m_entriesProcessed = true;

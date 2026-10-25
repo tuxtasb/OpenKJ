@@ -15,22 +15,14 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v5
-      with:
-        submodules: recursive
 
     - name: install deps
-      run: brew install cmake ninja pkgconf cppunit utf8cpp qt@5 gstreamer
+      run: brew install cmake ninja pkgconf qt gstreamer taglib spdlog
 
     - name: Build
-      env:
-        LDFLAGS: "-L/opt/homebrew/opt/qt@5/lib"
-        CPPFLAGS: "-I/opt/homebrew/opt/qt@5/include"
-        PKG_CONFIG_PATH: "/opt/homebrew/opt/qt@5/lib/pkgconfig"
-        QT_DIR: "/opt/homebrew/opt/qt@5/"
-        Qt5_DIR: "/opt/homebrew/opt/qt@5/"
       run: |
-        cmake -DSPDLOG_USE_BUNDLED=true . -B build -G Ninja
-        ninja -C build
+        cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+        cmake --build build
     - name: Upload app
       uses: actions/upload-artifact@v4
       with:

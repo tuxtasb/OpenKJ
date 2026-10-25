@@ -10,7 +10,7 @@
 #include "settings.h"
 #include <spdlog/spdlog.h>
 #include <spdlog/async_logger.h>
-#include <spdlog/fmt/ostr.h>
+#include "okjfmt.h"
 #include "okjtypes.h"
 
 

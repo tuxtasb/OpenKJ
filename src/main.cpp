@@ -151,6 +151,15 @@ int main(int argc, char *argv[]) {
 
     //QLoggingCategory::setFilterRules("*.debug=true");
     qInstallMessageHandler(myMessageOutput);
+#ifdef Q_OS_LINUX
+    // GStreamer's overlay video sinks (glimagesink/xvimagesink) can only embed into
+    // X11 windows.  When hardware accelerated video is enabled on a Wayland session,
+    // prefer XWayland unless the user explicitly picked a Qt platform plugin.
+    if (settings.hardwareAccelEnabled() && qEnvironmentVariableIsSet("WAYLAND_DISPLAY")
+        && qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM") && qEnvironmentVariableIsSet("DISPLAY")) {
+        qputenv("QT_QPA_PLATFORM", "xcb");
+    }
+#endif
     QApplication a(argc, argv);
 
 #ifdef MAC_OVERRIDE_GST
@@ -163,12 +172,12 @@ int main(int argc, char *argv[]) {
     qputenv("GTK_PATH", QString(appDir + "Frameworks/GStreamer.framework/Versions/Current/").toLocal8Bit());
     qputenv("GIO_EXTRA_MODULES", QString(appDir + "Frameworks/GStreamer.framework/Versions/Current/lib/gio/modules").toLocal8Bit());
     qWarning() << "MacOS detected, changed GST env vars to point to the bundled framework";
-    qWarning() << qgetenv("GST_PLUGIN_SYSTEM_PATH") << endl << qgetenv("GST_PLUGIN_SCANNER") << endl << qgetenv("GTK_PATH") << endl << qgetenv("GIO_EXTRA_MODULES") << endl;
+    qWarning() << qgetenv("GST_PLUGIN_SYSTEM_PATH") << Qt::endl << qgetenv("GST_PLUGIN_SCANNER") << Qt::endl << qgetenv("GTK_PATH") << Qt::endl << qgetenv("GIO_EXTRA_MODULES") << Qt::endl;
 #endif
 
+    filter = new IdleDetect(&a);
     a.installEventFilter(filter);
     qputenv("GST_DEBUG", "*:3");
-    QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     if (settings.theme() == 1) {
         QPalette palette;
         QApplication::setStyle(QStyleFactory::create("Fusion"));
@@ -204,22 +213,18 @@ int main(int argc, char *argv[]) {
     QApplication::setFont(settings.applicationFont(), "QMenu");
     QApplication::setFont(settings.applicationFont(), "QAction");
 
-    // RunGuard seems to be broken by flatpak, ignore it if running in a flatpak sandbox
     logger->info("App dir path {}", QCoreApplication::applicationDirPath().toStdString());
-    if (QCoreApplication::applicationDirPath() == "/app/bin") {
-        logger->info("RunGuard disabled due to flatpak sandbox");
-    } else {
-        logger->debug("Checking for other instances");
-        RunGuard guard("SharedMemorySingleInstanceProtectorOpenKJ");
-        if (!guard.tryToRun()) {
-            QMessageBox msgBox;
-            msgBox.setText("OpenKJ is already running!");
-            msgBox.setInformativeText(
-                    "In order to protect the database, you can only run one instance of OpenKJ at a time.\nExiting now.");
-            msgBox.setIcon(QMessageBox::Critical);
-            msgBox.exec();
-            return 1;
-        }
+    logger->debug("Checking for other instances");
+    // Must stay alive for the lifetime of the application
+    RunGuard guard("openkj-single-instance");
+    if (!guard.tryToRun()) {
+        QMessageBox msgBox;
+        msgBox.setText("OpenKJ is already running!");
+        msgBox.setInformativeText(
+                "In order to protect the database, you can only run one instance of OpenKJ at a time.\nExiting now.");
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.exec();
+        return 1;
     }
     if (!settings.lastStartupOk()) {
         QMessageBox msgBox;

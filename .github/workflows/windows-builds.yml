@@ -20,12 +20,10 @@ jobs:
             bits: 64
             arch: x86_64
             msvcarch: x64
-            qtarch: win64_msvc2019_64
+            qtarch: win64_msvc2022_64
 
     steps:
     - uses: actions/checkout@v5
-      with:
-        submodules: recursive
 
     - uses: seanmiddleditch/gha-setup-ninja@master
 
@@ -98,20 +96,12 @@ jobs:
         sed -i "s/#define MyAppVersion.*/#define MyAppVersion \"${{ steps.get_version.outputs.version-without-v }}\"/" cd/openkj${{ matrix.bits }}.iss
       shell: bash
 
-    - name: Download GST Installer
+    - name: Download GStreamer installer
       uses: carlosperate/download-file-action@v2
       id: download-gst
       with:
-        file-url: 'https://gstreamer.freedesktop.org/data/pkg/windows/1.27.1/mingw/gstreamer-1.0-mingw-${{ matrix.arch }}-1.27.1.msi'
-        file-name: 'gstreamer.msi'
-        location: './downloads'
-
-    - name: Download GST-Dev Installer
-      uses: carlosperate/download-file-action@v2
-      id: download-gst-dev
-      with:
-        file-url: 'https://gstreamer.freedesktop.org/data/pkg/windows/1.27.1/mingw/gstreamer-1.0-devel-mingw-${{ matrix.arch }}-1.27.1.msi'
-        file-name: 'gstreamer-devel.msi'
+        file-url: 'https://gstreamer.freedesktop.org/data/pkg/windows/1.28.8/msvc/gstreamer-1.0-msvc-${{ matrix.arch }}-1.28.8.exe'
+        file-name: 'gstreamer-installer.exe'
         location: './downloads'
 
     - name: Download InfoZip Binary
@@ -120,14 +110,6 @@ jobs:
       with:
         file-url: 'https://storage.googleapis.com/okj-installer-deps/unzip.exe'
         file-name: unzip.exe
-        location: /cached-downloads
-
-    - name: Download OpenSSL dll files
-      uses: carlosperate/download-file-action@v2
-      id: download-openssl
-      with:
-        file-url: 'https://storage.googleapis.com/okj-installer-deps/ssl-${{ matrix.arch }}-1.1.1.zip'
-        file-name: openssl.zip
         location: /cached-downloads
 
     - name: Download Roboto Bold
@@ -162,26 +144,24 @@ jobs:
         file-name: SourceCodePro-Medium.ttf
         location: /cached-downloads
 
-    - name: Install GST
+    - name: Install GStreamer (runtime + development files)
       shell: powershell
       run: |
-        start-process -wait msiexec -argumentlist '/q /i ${{ steps.download-gst.outputs.file-path }} ADDLOCAL=ALL'
-        start-sleep 10
-        start-process -wait msiexec -argumentlist '/q /i ${{ steps.download-gst-dev.outputs.file-path }} ADDLOCAL=ALL'
-        start-sleep 10
+        Start-Process -Wait -FilePath "${{ steps.download-gst.outputs.file-path }}" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TYPE=full','/DIR=C:\gstreamer\1.0\msvc_${{ matrix.arch }}'
+        "GSTREAMER_1_0_ROOT_MSVC_X86_64=C:\gstreamer\1.0\msvc_${{ matrix.arch }}\" | Out-File -FilePath $env:GITHUB_ENV -Append
+        "C:\gstreamer\1.0\msvc_${{ matrix.arch }}\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
     - name: Make dist copy of gstreamer
       run: |
-        cp -Rv c:/Program\ Files/gstreamer ./gstreamer-dist
+        cp -Rv c:/gstreamer ./gstreamer-dist
       shell: bash
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
-       version: '5.15.2'
+       version: '6.11.2'
        arch: ${{ matrix.qtarch }}
-       modules: 'qtnetworkauth'
-       archives: 'qtbase qtsvg'
+       cache: true
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
@@ -215,8 +195,8 @@ jobs:
 
     - name: Copy in gstreamer dependencies
       run: |
-        cp -Rv ./gstreamer-dist/1.0/mingw_${{ matrix.arch }}/* output/
-        cp -v ./gstreamer-dist/1.0/mingw_${{ matrix.arch }}/bin/*.dll output/
+        cp -Rv ./gstreamer-dist/1.0/msvc_${{ matrix.arch }}/* output/
+        cp -v ./gstreamer-dist/1.0/msvc_${{ matrix.arch }}/bin/*.dll output/
       shell: bash
 
     - name: Copy in other dependencies
@@ -227,7 +207,6 @@ jobs:
         copy ${{ steps.download-roboto-medium.outputs.file-path }} output\
         copy ${{ steps.download-roboto-regular.outputs.file-path }} output\
         copy ${{ steps.download-source-code-pro-medium.outputs.file-path }} output\
-        7z e -bb3 -y ${{ steps.download-openssl.outputs.file-path }} -o"output\"
 
     # - name: Sign OpenKJ executable
     #   run: |

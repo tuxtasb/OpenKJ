@@ -308,7 +308,7 @@ void DbUpdater::DiskEnumerator::readNextDiskFile()
             // File type is "cdg" and is only valid if there is an audio file with the same filename.
             // Look for an entry with the same filename in the list of audio files.
             invalid_file_found = true;
-            const QStringRef disk_path_without_ext = QStringRef(&CurrentFile, 0, CurrentFile.length() - 4);
+            const QStringView disk_path_without_ext = QStringView(CurrentFile).left(CurrentFile.length() - 4);
 
             while (m_i_aud < m_audioFilesOnDisk.size()) {
                 int comp_result_audio = disk_path_without_ext.compare(m_audioFilesOnDisk.at(m_i_aud));
@@ -412,21 +412,25 @@ void DbUpdater::fixMissingFiles(QVector<DbSongRecord> &filesMissingOnDisk, QStri
     qInfo() << "Looking for missing files";
 
     // Strategy: create new list of only the filenames (without paths) of all the new files found.
-    //   Instead of creating new strings, use QStringRef of the full path string.
+    //   Instead of creating new strings, keep a view of the filename alongside the full path string.
     //   Use that new, sorted list as a lookup table for the missing files in the database.
 
-    // Keep a copy of "newFilesOnDisk" so the QStrings are not destructed, causing QStringRefs to fail.
-    QStringList newFilesOnDiskCopy(newFilesOnDisk);
-    QVector<QStringRef> filesOnDiskFilenamesOnlySorted;
+    // Keep a copy of "newFilesOnDisk" so the QStrings are not destructed, causing the views to dangle.
+    struct FileNameRef {
+        QStringView fileName;
+        const QString *fullPath;
+    };
+    const QStringList newFilesOnDiskCopy(newFilesOnDisk);
+    QVector<FileNameRef> filesOnDiskFilenamesOnlySorted;
     filesOnDiskFilenamesOnlySorted.reserve(newFilesOnDiskCopy.size());
-    foreach(const QString &s, newFilesOnDiskCopy) {
+    for (const QString &s : newFilesOnDiskCopy) {
         int filenameBeginsAt = s.lastIndexOf('/') + 1;
-        filesOnDiskFilenamesOnlySorted.append(QStringRef(&s, filenameBeginsAt, s.length() - filenameBeginsAt));
+        filesOnDiskFilenamesOnlySorted.append({QStringView(s).mid(filenameBeginsAt), &s});
     }
 
     // Sort the list case insensitive
-    auto caseInsensitiveSort = [](const QStringRef &a, const QString &b) -> bool { return QStringRef::compare(a, b, Qt::CaseInsensitive) < 0; };
-    auto caseInsensitiveSortStringRef = [](const QStringRef &a, const QStringRef &b) -> bool { return QStringRef::compare(a, b, Qt::CaseInsensitive) < 0; };
+    auto caseInsensitiveSort = [](const FileNameRef &a, const QString &b) -> bool { return a.fileName.compare(b, Qt::CaseInsensitive) < 0; };
+    auto caseInsensitiveSortStringRef = [](const FileNameRef &a, const FileNameRef &b) -> bool { return a.fileName.compare(b.fileName, Qt::CaseInsensitive) < 0; };
 
     std::sort(filesOnDiskFilenamesOnlySorted.begin(), filesOnDiskFilenamesOnlySorted.end(), caseInsensitiveSortStringRef);
 
@@ -446,17 +450,17 @@ void DbUpdater::fixMissingFiles(QVector<DbSongRecord> &filesMissingOnDisk, QStri
         bool matchFound = false;
         auto filenameWithoutPath = QFileInfo(missingFile.path).fileName();
         auto const lb = std::lower_bound(filesOnDiskFilenamesOnlySorted.begin(), filesOnDiskFilenamesOnlySorted.end(), filenameWithoutPath, caseInsensitiveSort);
-        if (lb->compare(filenameWithoutPath, Qt::CaseInsensitive) == 0) {
-            query.bindValue(":newpath", *lb->string());
+        if (lb != filesOnDiskFilenamesOnlySorted.end() && lb->fileName.compare(filenameWithoutPath, Qt::CaseInsensitive) == 0) {
+            query.bindValue(":newpath", *lb->fullPath);
             query.bindValue(":id", missingFile.id);
 
             if (query.exec()) {
                 emit progressMessage("Found match! Modifying existing song.");
                 qInfo() << "Missing file found at new location";
                 qInfo() << "  old: " << missingFile.path;
-                qInfo() << "  new: " << lb->string();
+                qInfo() << "  new: " << *lb->fullPath;
 
-                newFilesOnDisk.removeOne(*lb->string());
+                newFilesOnDisk.removeOne(*lb->fullPath);
                 matchFound = true;
             }
             else {

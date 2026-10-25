@@ -8,9 +8,8 @@
 #include <QJsonDocument>
 #include <QUrl>
 #include <QSvgRenderer>
-#include <spdlog/fmt/ostr.h>
+#include "okjfmt.h"
 
-std::ostream & operator<<(std::ostream& os, const QString& s);
 
 TableModelQueueSongs::TableModelQueueSongs(TableModelKaraokeSongs &karaokeSongsModel, QObject *parent)
         : QAbstractTableModel(parent), m_karaokeSongsModel(karaokeSongsModel) {
@@ -93,9 +92,9 @@ QVariant TableModelQueueSongs::data(const QModelIndex &index, int role) const {
 QVariant TableModelQueueSongs::getColumnTextAlignmentRoleData(int column) {
     switch (column) {
         case COL_KEY:
-            return Qt::AlignHCenter + Qt::AlignVCenter;
+            return int(Qt::AlignHCenter | Qt::AlignVCenter);
         case COL_DURATION:
-            return Qt::AlignRight + Qt::AlignVCenter;
+            return int(Qt::AlignRight | Qt::AlignVCenter);
         default:
             return {};
     }

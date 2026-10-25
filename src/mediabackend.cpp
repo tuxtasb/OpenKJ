@@ -27,6 +27,7 @@
 #include "softwarerendervideosink.h"
 #include <QDir>
 #include <QProcess>
+#include <QGuiApplication>
 #include <functional>
 #include <utility>
 #include <gst/video/videooverlay.h>
@@ -46,6 +47,12 @@ MediaBackend::MediaBackend(QObject *parent, QString objectName, const MediaType 
     m_loggingPrefix = "[MediaBackend] [" + m_objName.toStdString() + "]";
     m_logger->debug("{} Constructing GStreamer backend", m_loggingPrefix);
     m_videoAccelEnabled = m_settings.hardwareAccelEnabled();
+    // Overlay sinks need a native X11/Win32/Cocoa window handle, which Wayland doesn't provide.
+    if (m_videoAccelEnabled && QGuiApplication::platformName().startsWith("wayland"))
+    {
+        m_logger->warn("{} Hardware accelerated video is not supported on Wayland, using software rendering", m_loggingPrefix);
+        m_videoAccelEnabled = false;
+    }
     m_logger->info("{} Hardware accelerated video rendering mode: {}",m_loggingPrefix, m_videoAccelEnabled);
     QMetaTypeId<std::shared_ptr<GstMessage>>::qt_metatype_id();
 
@@ -691,7 +698,7 @@ void MediaBackend::gstBusFunc(GstMessage *message)
                           m_loggingPrefix,
                           message->src->name,
                           gst_message_type_get_name(message->type),
-                          message->type);
+                          static_cast<int>(message->type));
             break;
     }
 }

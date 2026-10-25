@@ -36,13 +36,11 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v5
-      with:
-        submodules: recursive
 
     - name: Install build dependencies
       run: |
         sudo apt-get update
-        sudo apt-get -qq -y install cmake qtbase5-dev libqt5svg5-dev qtmultimedia5-dev libgstreamer1.0-dev libtagc0-dev libspdlog-dev libgstreamer-plugins-base1.0-dev
+        sudo apt-get -qq -y install cmake ninja-build pkg-config qt6-base-dev qt6-svg-dev libgl-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libtag1-dev libspdlog-dev
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
@@ -50,7 +48,9 @@ jobs:
         languages: ${{ matrix.language }}
 
     - name: Build
-      run: cmake -DCMAKE_BUILD_TYPE=Debug . -B build
+      run: |
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+        cmake --build build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

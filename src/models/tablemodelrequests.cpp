@@ -91,9 +91,7 @@ QVariant TableModelRequests::data(const QModelIndex &index, int role) const {
                 else
                     return QString::number(m_requests.at(index.row()).key());
             case TIMESTAMP:
-                QDateTime ts;
-                ts.setTime_t(m_requests.at(index.row()).timeStamp());
-                return ts.toString("M-d-yy h:mm ap");
+                return QDateTime::fromSecsSinceEpoch(m_requests.at(index.row()).timeStamp()).toString("M-d-yy h:mm ap");
         }
     }
     if (role == Qt::UserRole)

@@ -27,10 +27,9 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
+#include "okjfmt.h"
 #include <chrono>
 
-std::ostream& operator<<(std::ostream& os, const QString& s);
 
 TableModelRotation::TableModelRotation(QObject *parent)
         : QAbstractTableModel(parent) {

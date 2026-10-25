@@ -1,6 +1,7 @@
 #include "tagreader.h"
+#include <QFile>
 #include <tag.h>
-#include <taglib/fileref.h>
+#include <fileref.h>
 
 TagReader::TagReader(QObject *parent) : QObject(parent)
 {
@@ -93,12 +94,16 @@ void TagReader::setMedia(const QString& path)
 
 void TagReader::taglibTags(const QString& path)
 {
-    TagLib::FileRef f(path.toLocal8Bit().data());
+#ifdef Q_OS_WIN
+    TagLib::FileRef f(reinterpret_cast<const wchar_t*>(path.utf16()));
+#else
+    TagLib::FileRef f(QFile::encodeName(path).constData());
+#endif
     if (!f.isNull())
     {
         m_artist = f.tag()->artist().toCString(true);
         m_title = f.tag()->title().toCString(true);
-        m_duration = f.audioProperties()->length() * 1000;
+        m_duration = f.audioProperties()->lengthInMilliseconds();
         m_album = f.tag()->album().toCString(true);
         auto track = f.tag()->track();
         if (track == 0)

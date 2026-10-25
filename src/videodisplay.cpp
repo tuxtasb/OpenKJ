@@ -64,9 +64,7 @@ void VideoDisplay::paintEvent(QPaintEvent *event)
         if (m_useDefaultBg)
         {
             QSvgRenderer renderer(QString(":icons/Icons/okjlogo.svg"));
-#if (QT_VERSION >= QT_VERSION_CHECK(5,15,0))
             renderer.setAspectRatioMode(Qt::KeepAspectRatio);
-#endif
             renderer.render(&painter);
         }
         else

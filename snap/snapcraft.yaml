@@ -1,0 +1,84 @@
+name: openkj
+title: OpenKJ
+base: core24
+adopt-info: openkj
+license: GPL-3.0-or-later
+summary: Professional karaoke hosting software
+description: |
+  Karaoke hosting software aimed at professional karaoke DJs.
+
+  Features rotation management, playback of all common karaoke formats
+  (MP3+G, CDG, zip, video) and various other features important for
+  hosting a show.
+grade: devel
+confinement: strict
+icon: src/Icons/org.openkj.OpenKJ.svg
+
+platforms:
+  amd64:
+  arm64:
+
+apps:
+  openkj:
+    command: usr/bin/openkj
+    common-id: org.openkj.OpenKJ
+    desktop: usr/share/applications/org.openkj.OpenKJ.desktop
+    extensions:
+      - kde-neon-6
+    plugs:
+      - home
+      - removable-media
+      - network
+      - audio-playback
+      - audio-record
+      - opengl
+      - cups-control
+    environment:
+      GST_PLUGIN_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gstreamer-1.0
+      GST_PLUGIN_SYSTEM_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gstreamer-1.0
+      GST_PLUGIN_SCANNER: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner
+      LADSPA_PATH: $SNAP/usr/lib/ladspa
+      GST_REGISTRY: $SNAP_USER_COMMON/gstreamer-1.0/registry.$CRAFT_ARCH_BUILD_FOR.bin
+
+parts:
+  openkj:
+    plugin: cmake
+    source: .
+    parse-info:
+      - usr/share/metainfo/org.openkj.OpenKJ.metainfo.xml
+    build-packages:
+      - git
+      - pkg-config
+      - libgstreamer1.0-dev
+      - libgstreamer-plugins-base1.0-dev
+    cmake-generator: Ninja
+    cmake-parameters:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_INSTALL_PREFIX=/usr
+      - -DCMAKE_FIND_ROOT_PATH=$CRAFT_STAGE\;/snap/kde-qt6-core24-sdk/current\;/snap/kf6-core24-sdk/current/usr
+      - -DCMAKE_PREFIX_PATH=$CRAFT_STAGE\;/snap/kde-qt6-core24-sdk/current\;/snap/kf6-core24-sdk/current/usr
+      # Statically build current TagLib/spdlog releases rather than the older
+      # copies in the Ubuntu 24.04 archive.
+      - -DOKJ_FETCH_TAGLIB=ON
+      - -DOKJ_FETCH_SPDLOG=ON
+    stage-packages:
+      - unzip
+      - libgstreamer1.0-0
+      - libgstreamer-plugins-base1.0-0
+      - libgstreamer-gl1.0-0
+      - gstreamer1.0-plugins-base
+      - gstreamer1.0-plugins-good
+      - gstreamer1.0-plugins-bad
+      - gstreamer1.0-plugins-ugly
+      - gstreamer1.0-libav
+      - gstreamer1.0-gl
+      - gstreamer1.0-pulseaudio
+      - gstreamer1.0-alsa
+      - gstreamer1.0-x
+      # Key changer (ladspa rubberband pitch shifter)
+      - rubberband-ladspa
+    prime:
+      # Provided by the kde-neon-6 content snaps
+      - -usr/lib/*/libQt6*
+      - -usr/share/doc
+      - -usr/share/man

@@ -21,46 +21,34 @@ jobs:
             bits: 64
             arch: x86_64
             msvcarch: x64
-            qtarch: win64_msvc2019_64
+            qtarch: win64_msvc2022_64
 
     steps:
     - uses: actions/checkout@v5
-      with:
-        submodules: recursive
 
     - uses: seanmiddleditch/gha-setup-ninja@master
 
-    - name: Download GST Installer
+    - name: Download GStreamer installer
       uses: carlosperate/download-file-action@v2
       id: download-gst
       with:
-        file-url: 'https://gstreamer.freedesktop.org/data/pkg/windows/1.27.1/mingw/gstreamer-1.0-mingw-${{ matrix.arch }}-1.27.1.msi'
-        file-name: 'gstreamer.msi'
+        file-url: 'https://gstreamer.freedesktop.org/data/pkg/windows/1.28.8/msvc/gstreamer-1.0-msvc-${{ matrix.arch }}-1.28.8.exe'
+        file-name: 'gstreamer-installer.exe'
         location: './downloads'
 
-    - name: Download GST-Dev Installer
-      uses: carlosperate/download-file-action@v2
-      id: download-gst-dev
-      with:
-        file-url: 'https://gstreamer.freedesktop.org/data/pkg/windows/1.27.1/mingw/gstreamer-1.0-devel-mingw-${{ matrix.arch }}-1.27.1.msi'
-        file-name: 'gstreamer-devel.msi'
-        location: './downloads'
-
-    - name: Install GST
+    - name: Install GStreamer (runtime + development files)
       shell: powershell
       run: |
-        start-process -wait msiexec -argumentlist '/q /i ${{ steps.download-gst.outputs.file-path }} ADDLOCAL=ALL'
-        start-sleep 10
-        start-process -wait msiexec -argumentlist '/q /i ${{ steps.download-gst-dev.outputs.file-path }} ADDLOCAL=ALL'
-        start-sleep 10
+        Start-Process -Wait -FilePath "${{ steps.download-gst.outputs.file-path }}" -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/TYPE=full','/DIR=C:\gstreamer\1.0\msvc_${{ matrix.arch }}'
+        "GSTREAMER_1_0_ROOT_MSVC_X86_64=C:\gstreamer\1.0\msvc_${{ matrix.arch }}\" | Out-File -FilePath $env:GITHUB_ENV -Append
+        "C:\gstreamer\1.0\msvc_${{ matrix.arch }}\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
-       version: '5.15.2'
+       version: '6.11.2'
        arch: ${{ matrix.qtarch }}
-       modules: 'qtnetworkauth'
-       archives: 'qtbase qtsvg'
+       cache: true
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build

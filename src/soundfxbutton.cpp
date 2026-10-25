@@ -15,7 +15,7 @@ void SoundFxButton::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::RightButton)
     {
-        emit customContextMenuRequested(event->pos());
+        emit customContextMenuRequested(event->position().toPoint());
         return;
     }
     QAbstractButton::mouseReleaseEvent(event);
